@@ -1,0 +1,30 @@
+{
+  "created_utc": "2026-09-28T18:04:50.849969+00:00",
+  "seed": 1729,
+  "sources": {
+    "banking77": "https://raw.githubusercontent.com/PolyAI-LDN/task-specific-datasets/master/banking_data/test.csv",
+    "boolq": "hf:google/boolq@validation",
+    "yelp": "hf:Yelp/yelp_review_full@test"
+  },
+  "filters": {
+    "boolq_max_words": 250,
+    "yelp_max_words": 150
+  },
+  "files": {
+    "banking77_sweep": {
+      "file": "banking77_sweep.jsonl",
+      "rows": 1440,
+      "sha256": "00089f3234aa39a74871056a6e641e00bd85406c9eba932f8051125fce74165f"
+    },
+    "boolq": {
+      "file": "boolq.jsonl",
+      "rows": 300,
+      "sha256": "e53c3806aa94f29e7d78165fbdaa54cd076f9229644c13d4736aa0abc165402e"
+    },
+    "yelp": {
+      "file": "yelp.jsonl",
+      "rows": 300,
+      "sha256": "0abebf185afa3b8394f1c60c487a1f951cecacc10f360a2a9b853dbc668c9205"
+    }
+  }
+}
