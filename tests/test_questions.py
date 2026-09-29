@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from twinbench.questions import (
+from jev_eval.questions import (
     YELP_LEVELS,
     banking77_criteria,
     banking77_state,

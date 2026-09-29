@@ -1,4 +1,4 @@
-"""CLI: `twinbench run [--limit N] [--no-cache] [--experiments e1,e2,...]`."""
+"""CLI: `jev-eval run [--limit N] [--no-cache] [--experiments e1,e2,...]`."""
 from __future__ import annotations
 
 import argparse
@@ -33,7 +33,7 @@ def _positive_int(value: str) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="twinbench")
+    parser = argparse.ArgumentParser(prog="jev-eval")
     sub = parser.add_subparsers(dest="command", required=True)
 
     run = sub.add_parser("run", help="run the benchmark")

@@ -4,7 +4,7 @@ One line per non-obvious choice, with the reason.
 
 ## Sprint 1
 
-- Package and console script are both `twinbench`; `module-name = "twinbench"` is set explicitly in `[tool.uv.build-backend]` so the build backend can't drift from the source directory. The old `src/system_one` stub is deleted, not kept for compatibility.
+- The package is `jev_eval` (`module-name = "jev_eval"` in `[tool.uv.build-backend]`, matching the `src/jev_eval` directory), while the console script and CLI prog name are the hyphenated `jev-eval`, since hyphens aren't valid in a Python module name but are the normal CLI convention.
 - `datasets` moved to a dev dependency group: only `prep_data.py` needs it, the benchmark itself doesn't. The unused `pytorch-cpu` index is removed (no torch anywhere in this project).
 - `Config.api_key` is `field(repr=False)` and `__repr__`/`__str__` are overridden to print only `base_url`; the `Authorization` header is built on demand by `auth_headers()` and never stored on the object, so no dump of a config can leak the key.
 - The key is `.strip()`ped; a whitespace-only key counts as unset (catches a trailing newline from `export KEY=$(cat file)`).

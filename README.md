@@ -1,4 +1,4 @@
-# twinbench
+# jev-eval
 
 Reproducible CLI benchmark for Jev (TypeSafe AI System One): measures Choice, Noul and Score
 performance on Banking77, BoolQ and Yelp. See `PREMISE.md` for the full spec.
@@ -17,7 +17,7 @@ uv sync
 ## Usage
 
 ```
-uv run twinbench run --limit 20
+uv run jev-eval run --limit 20
 uv run pytest -q
 ```
 

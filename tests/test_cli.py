@@ -1,6 +1,6 @@
 import pytest
 
-from twinbench.cli import build_parser, main
+from jev_eval.cli import build_parser, main
 
 
 def test_help_lists_run(capsys):

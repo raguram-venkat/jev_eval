@@ -1,5 +1,5 @@
 [project]
-name = "twinbench"
+name = "jev-eval"
 version = "0.1.0"
 description = "Reproducible CLI benchmark for Jev (TypeSafe AI System One) typed decisions"
 readme = "README.md"
@@ -18,7 +18,7 @@ dependencies = [
 ]
 
 [project.scripts]
-twinbench = "twinbench.cli:main"
+jev-eval = "jev_eval.cli:main"
 
 [dependency-groups]
 dev = [
@@ -26,7 +26,7 @@ dev = [
 ]
 
 [tool.uv.build-backend]
-module-name = "twinbench"
+module-name = "jev_eval"
 
 [build-system]
 requires = ["uv_build>=0.12.16,<0.13.0"]

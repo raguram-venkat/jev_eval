@@ -1,6 +1,6 @@
 import pytest
 
-from twinbench.config import DEFAULT_BASE_URL, Config, MissingApiKeyError, load_config
+from jev_eval.config import DEFAULT_BASE_URL, Config, MissingApiKeyError, load_config
 
 
 def test_default_base_url(monkeypatch):

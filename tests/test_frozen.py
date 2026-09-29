@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from twinbench.frozen import FrozenDataError, verify
+from jev_eval.frozen import FrozenDataError, verify
 
 
 def _sha256(path: Path) -> str:
