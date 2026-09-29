@@ -1,0 +1,13 @@
+{
+  "state": {
+    "passage": "The team's only World Series appearance came in 1982. After winning the ALCS against the California Angels, the Brewers faced off against the St. Louis Cardinals in the World Series, losing 4--3. In 2011, the Brewers defeated the Arizona Diamondbacks to win the NLDS 3--2, but lost in the NLCS to the eventual World Series champion Cardinals 4--2.",
+    "question": "did the brewers make it to the world series"
+  },
+  "model": "jev-latest",
+  "questions": {
+    "answer": {
+      "type": "noul",
+      "instructions": "According to `passage`, is the answer to `question` yes?"
+    }
+  }
+}

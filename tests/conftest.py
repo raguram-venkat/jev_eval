@@ -40,8 +40,10 @@ class _Handler(http.server.BaseHTTPRequestHandler):
     def _handle(self):
         seen = self.server.seen
         seen[self.path] = seen.get(self.path, 0) + 1
+        length = int(self.headers.get("Content-Length", 0))
+        body = json.loads(self.rfile.read(length)) if length else None
         responder = self.server.responders.get(self.path, self.server.default_responder)
-        result = responder(seen, seen[self.path])
+        result = responder(seen, seen[self.path], body)
         if result is None:
             self.close_connection = True
             return
@@ -60,16 +62,17 @@ class _Handler(http.server.BaseHTTPRequestHandler):
 
 class FakeServer:
     """A loopback HTTP server for tests. Register a responder per path:
-    `fn(seen, n) -> (status, body, headers) | None`, called with the hit count `n`
-    for that path (1-based). Returning `None` drops the connection with no response,
-    which surfaces to httpx as a transport error.
+    `fn(seen, n, body) -> (status, response_body, headers) | None`, called with the hit
+    count `n` for that path (1-based) and the parsed JSON request body (`None` for GET).
+    Returning `None` drops the connection with no response, which surfaces to httpx as
+    a transport error.
     """
 
     def __init__(self):
         self.httpd = http.server.ThreadingHTTPServer(("127.0.0.1", 0), _Handler)
         self.httpd.seen = {}
         self.httpd.responders = {}
-        self.httpd.default_responder = staticmethod(lambda seen, n: (200, {"model": "jev-1.0.0"}, {}))
+        self.httpd.default_responder = staticmethod(lambda seen, n, body: (200, {"model": "jev-1.0.0"}, {}))
         self.thread = threading.Thread(target=self.httpd.serve_forever, kwargs={"poll_interval": 0.02}, daemon=True)
         self.thread.start()
 

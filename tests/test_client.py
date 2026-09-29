@@ -22,7 +22,7 @@ def test_successful_request_returns_model_and_latency(fake_server):
 def test_retries_429_then_succeeds(fake_server):
     fake_server.set_responder(
         "/v1/systemone",
-        lambda seen, n: (429, {}, {}) if n == 1 else (200, {"model": "jev-1.0.0"}, {}),
+        lambda seen, n, body: (429, {}, {}) if n == 1 else (200, {"model": "jev-1.0.0"}, {}),
     )
     client = _client(fake_server)
     result = client.request({"model": "jev-latest"})
@@ -33,7 +33,7 @@ def test_retries_429_then_succeeds(fake_server):
 def test_retries_5xx_then_succeeds(fake_server):
     fake_server.set_responder(
         "/v1/systemone",
-        lambda seen, n: (503, {}, {}) if n <= 2 else (200, {"model": "jev-1.0.0"}, {}),
+        lambda seen, n, body: (503, {}, {}) if n <= 2 else (200, {"model": "jev-1.0.0"}, {}),
     )
     client = _client(fake_server)
     result = client.request({"model": "jev-latest"})
@@ -42,7 +42,7 @@ def test_retries_5xx_then_succeeds(fake_server):
 
 
 def test_gives_up_after_max_attempts_and_records_failure(fake_server):
-    fake_server.set_responder("/v1/systemone", lambda seen, n: (503, "unavailable", {}))
+    fake_server.set_responder("/v1/systemone", lambda seen, n, body: (503, "unavailable", {}))
     client = _client(fake_server)
     result = client.request({"model": "jev-latest"})
     assert not result.ok
@@ -52,7 +52,7 @@ def test_gives_up_after_max_attempts_and_records_failure(fake_server):
 
 @pytest.mark.parametrize("status", [401, 403])
 def test_auth_error_aborts_after_exactly_one_attempt(fake_server, status):
-    fake_server.set_responder("/v1/systemone", lambda seen, n: (status, {}, {}))
+    fake_server.set_responder("/v1/systemone", lambda seen, n, body: (status, {}, {}))
     client = _client(fake_server)
     with pytest.raises(AuthError):
         client.request({"model": "jev-latest"})
@@ -62,7 +62,7 @@ def test_auth_error_aborts_after_exactly_one_attempt(fake_server, status):
 def test_transport_error_retries_then_succeeds(fake_server):
     fake_server.set_responder(
         "/v1/systemone",
-        lambda seen, n: None if n == 1 else (200, {"model": "jev-1.0.0"}, {}),
+        lambda seen, n, body: None if n == 1 else (200, {"model": "jev-1.0.0"}, {}),
     )
     client = _client(fake_server)
     result = client.request({"model": "jev-latest"})
@@ -71,7 +71,7 @@ def test_transport_error_retries_then_succeeds(fake_server):
 
 
 def test_malformed_response_is_a_failure_not_retried(fake_server):
-    fake_server.set_responder("/v1/systemone", lambda seen, n: (200, {"no_model_field": True}, {}))
+    fake_server.set_responder("/v1/systemone", lambda seen, n, body: (200, {"no_model_field": True}, {}))
     client = _client(fake_server)
     result = client.request({"model": "jev-latest"})
     assert not result.ok
@@ -82,7 +82,7 @@ def test_retry_after_header_used_as_backoff_base(fake_server):
     sleeps = []
     fake_server.set_responder(
         "/v1/systemone",
-        lambda seen, n: (429, {}, {"Retry-After": "5"}) if n == 1 else (200, {"model": "jev-1.0.0"}, {}),
+        lambda seen, n, body: (429, {}, {"Retry-After": "5"}) if n == 1 else (200, {"model": "jev-1.0.0"}, {}),
     )
     client = JevClient(
         base_url=fake_server.base_url, api_key="sentinel-key",
@@ -93,7 +93,7 @@ def test_retry_after_header_used_as_backoff_base(fake_server):
 
 
 def test_key_never_appears_in_error_or_repr(fake_server):
-    fake_server.set_responder("/v1/systemone", lambda seen, n: (500, "boom", {}))
+    fake_server.set_responder("/v1/systemone", lambda seen, n, body: (500, "boom", {}))
     client = _client(fake_server)
     result = client.request({"model": "jev-latest"})
     assert "sentinel-key" not in repr(client)
@@ -103,12 +103,12 @@ def test_key_never_appears_in_error_or_repr(fake_server):
 
 
 def test_preflight_ok(fake_server):
-    fake_server.set_responder("/v1/models", lambda seen, n: (200, {"models": []}, {}))
+    fake_server.set_responder("/v1/models", lambda seen, n, body: (200, {"models": []}, {}))
     _client(fake_server).preflight()
 
 
 def test_preflight_bad_status_fails(fake_server):
-    fake_server.set_responder("/v1/models", lambda seen, n: (500, {}, {}))
+    fake_server.set_responder("/v1/models", lambda seen, n, body: (500, {}, {}))
     with pytest.raises(PreflightError, match="500"):
         _client(fake_server).preflight()
 
@@ -120,7 +120,7 @@ def test_preflight_connection_refused_fails(dead_url):
 
 
 def test_preflight_never_retries(fake_server):
-    fake_server.set_responder("/v1/models", lambda seen, n: (500, {}, {}))
+    fake_server.set_responder("/v1/models", lambda seen, n, body: (500, {}, {}))
     with pytest.raises(PreflightError):
         _client(fake_server).preflight()
     assert fake_server.hits("/v1/models") == 1
@@ -147,7 +147,7 @@ def test_plan_only_counts_uncached_bodies(fake_server, tmp_path):
 def test_model_change_guard_stops_further_sends(fake_server):
     fake_server.set_responder(
         "/v1/systemone",
-        lambda seen, n: (200, {"model": "jev-1.0.0" if n < 8 else "jev-2.0.0"}, {}),
+        lambda seen, n, body: (200, {"model": "jev-1.0.0" if n < 8 else "jev-2.0.0"}, {}),
     )
     client = JevClient(base_url=fake_server.base_url, api_key="sentinel-key")
     ctx = RunContext(client, cap=1000)

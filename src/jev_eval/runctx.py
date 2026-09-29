@@ -21,6 +21,10 @@ class RunContext:
     def sent(self) -> int:
         return self._sent
 
+    @property
+    def remaining_cap(self) -> int:
+        return self._cap - self._sent
+
     def failures(self, experiment: str) -> int:
         return self._failures[experiment]
 

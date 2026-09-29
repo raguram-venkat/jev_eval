@@ -83,6 +83,11 @@ class JevClient:
         if resp.status_code != 200:
             raise PreflightError(f"preflight failed: GET {url}: status {resp.status_code}")
 
+    def list_models(self) -> dict[str, Any]:
+        resp = self._client.get(f"{self._base_url}/v1/models", headers=self._headers)
+        resp.raise_for_status()
+        return resp.json()
+
     def plan(self, bodies: list[dict[str, Any]], cap: int = REQUEST_CAP) -> int:
         if self._cache is None:
             planned = len(bodies)

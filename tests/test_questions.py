@@ -2,11 +2,17 @@ import json
 from pathlib import Path
 
 from jev_eval.questions import (
+    BANKING77_QID,
+    BOOLQ_QID,
     YELP_LEVELS,
+    YELP_QID,
     banking77_criteria,
+    banking77_request,
     banking77_state,
+    boolq_request,
     boolq_state,
     questions_hash,
+    yelp_request,
     yelp_state,
 )
 
@@ -55,3 +61,27 @@ def test_golden_boolq_request_row0():
         "passage": row["passage"],
         "question": "did the brewers make it to the world series",
     }
+
+
+def test_banking77_request_shape():
+    row = {"text": "hi", "options": ["a", "b"]}
+    body = banking77_request(row)
+    assert body["state"] == {"message": "hi"}
+    assert body["questions"][BANKING77_QID]["type"] == "choice"
+    assert body["questions"][BANKING77_QID]["criteria"] == {"a": "a", "b": "b"}
+
+
+def test_boolq_request_shape():
+    row = {"passage": "p", "question": "q"}
+    body = boolq_request(row)
+    assert body["state"] == {"passage": "p", "question": "q"}
+    assert body["questions"][BOOLQ_QID]["type"] == "noul"
+    assert "criteria" not in body["questions"][BOOLQ_QID]
+
+
+def test_yelp_request_shape():
+    row = {"text": "great stay"}
+    body = yelp_request(row)
+    assert body["state"] == {"review": "great stay"}
+    assert body["questions"][YELP_QID]["type"] == "score"
+    assert body["questions"][YELP_QID]["criteria"] == YELP_LEVELS

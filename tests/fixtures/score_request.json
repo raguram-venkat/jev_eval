@@ -1,0 +1,19 @@
+{
+  "state": {
+    "review": "How the Mighty have fallen , service is pure crap"
+  },
+  "model": "jev-latest",
+  "questions": {
+    "stars": {
+      "type": "score",
+      "instructions": "How positive is this customer's review?",
+      "criteria": [
+        "very negative experience",
+        "negative experience",
+        "mixed or neutral experience",
+        "positive experience",
+        "excellent experience"
+      ]
+    }
+  }
+}

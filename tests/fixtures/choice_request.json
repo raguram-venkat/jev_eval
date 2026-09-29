@@ -1,0 +1,16 @@
+{
+  "state": {
+    "message": "I want this amount reversed out of my account."
+  },
+  "model": "jev-latest",
+  "questions": {
+    "intent": {
+      "type": "choice",
+      "instructions": "Which banking intent does this customer message express?",
+      "criteria": {
+        "automatic top up": "automatic top up",
+        "request refund": "request refund"
+      }
+    }
+  }
+}

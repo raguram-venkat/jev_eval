@@ -3,16 +3,25 @@ from __future__ import annotations
 
 import argparse
 import sys
+import time
 from pathlib import Path
 
+from . import e1
 from .cache import Cache
-from .client import JevClient, PreflightError
+from .client import JevClient, ModelChangedError, PreflightError, RequestCapError
 from .config import Config, MissingApiKeyError, load_config
 from .frozen import FrozenDataError, verify
+from .results import new_run_dir, point_latest, write_manifest, write_predictions
+from .runctx import RunContext
+from .runner import Prediction, run_experiment
 
 VALID_EXPERIMENTS = {"e1", "e2", "e3", "e4", "e5"}
 FROZEN_DIR = Path("data/frozen")
 CACHE_DIR = Path("cache")
+
+# Only experiments with a runner module registered here are implemented; the rest are
+# valid CLI names (so scripts can pass the full list) that print a note and are skipped.
+EXPERIMENTS = {"e1": e1}
 
 
 def make_client(config: Config, no_cache: bool) -> JevClient:
@@ -72,12 +81,46 @@ def main(argv: list[str] | None = None) -> int:
         client.preflight()
     except PreflightError as e:
         print(f"error: {e}", file=sys.stderr)
+        client.close()
         return 1
+
+    start_time = time.time()
+    ctx = RunContext(client)
+    predictions: list[Prediction] = []
+    exit_code = 0
+
+    try:
+        for name in args.experiments:
+            module = EXPERIMENTS.get(name)
+            if module is None:
+                print(f"{name}: lands in a later sprint, skipped")
+                continue
+
+            rows = module.stratified_sample(module.load_rows(), args.limit)
+            bodies = [module.build_request(r) for r in rows]
+            try:
+                client.plan(bodies, cap=ctx.remaining_cap)
+                exp_predictions = run_experiment(name, rows, module.build_request, module.parse_result, ctx)
+            except (RequestCapError, ModelChangedError) as e:
+                print(f"error: {e}", file=sys.stderr)
+                exit_code = 1
+                break
+
+            predictions.extend(exp_predictions)
+            failed = sum(1 for p in exp_predictions if p.error)
+            print(f"{name}: {len(exp_predictions)} rows, {failed} failed")
     finally:
         client.close()
 
-    print("preflight ok, frozen data verified, config loaded — experiment runners land in a later sprint")
-    return 0
+    if predictions:
+        run_dir = new_run_dir()
+        write_predictions(run_dir, predictions)
+        model = next((p.model for p in predictions if p.model), None)
+        write_manifest(run_dir, model, FROZEN_DIR / "manifest.json", start_time, time.time())
+        point_latest(run_dir)
+        print(f"results: {run_dir}")
+
+    return exit_code
 
 
 if __name__ == "__main__":
