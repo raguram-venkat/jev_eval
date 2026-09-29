@@ -5,11 +5,19 @@ import argparse
 import sys
 from pathlib import Path
 
-from .config import MissingApiKeyError, load_config
+from .cache import Cache
+from .client import JevClient, PreflightError
+from .config import Config, MissingApiKeyError, load_config
 from .frozen import FrozenDataError, verify
 
 VALID_EXPERIMENTS = {"e1", "e2", "e3", "e4", "e5"}
 FROZEN_DIR = Path("data/frozen")
+CACHE_DIR = Path("cache")
+
+
+def make_client(config: Config, no_cache: bool) -> JevClient:
+    cache = None if no_cache else Cache(CACHE_DIR)
+    return JevClient(base_url=config.base_url, api_key=config.api_key, cache=cache)
 
 
 def _experiments(value: str) -> list[str]:
@@ -49,7 +57,7 @@ def main(argv: list[str] | None = None) -> int:
     assert args.command == "run"
 
     try:
-        load_config()
+        config = load_config()
     except MissingApiKeyError as e:
         parser.exit(2, f"error: {e}\n")
 
@@ -59,7 +67,16 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error: {e}", file=sys.stderr)
         return 1
 
-    print("frozen data verified, config loaded — experiment runners land in a later sprint")
+    client = make_client(config, args.no_cache)
+    try:
+        client.preflight()
+    except PreflightError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 1
+    finally:
+        client.close()
+
+    print("preflight ok, frozen data verified, config loaded — experiment runners land in a later sprint")
     return 0
 
 

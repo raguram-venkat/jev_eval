@@ -31,6 +31,15 @@ def test_missing_key_exits_2_before_frozen_check(monkeypatch, capsys):
     assert "TYPESAFE_API_KEY" in capsys.readouterr().err
 
 
-def test_run_succeeds_with_key_and_valid_frozen_data(monkeypatch):
+def test_run_succeeds_with_key_valid_frozen_data_and_reachable_jev(monkeypatch, fake_server):
+    fake_server.set_responder("/v1/models", lambda seen, n: (200, {"models": []}, {}))
     monkeypatch.setenv("TYPESAFE_API_KEY", "sentinel-key")
+    monkeypatch.setenv("JEV_BASE_URL", fake_server.base_url)
     assert main(["run"]) == 0
+
+
+def test_run_exits_1_when_preflight_fails(monkeypatch, fake_server):
+    fake_server.set_responder("/v1/models", lambda seen, n: (500, {}, {}))
+    monkeypatch.setenv("TYPESAFE_API_KEY", "sentinel-key")
+    monkeypatch.setenv("JEV_BASE_URL", fake_server.base_url)
+    assert main(["run"]) == 1
