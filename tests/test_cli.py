@@ -41,13 +41,14 @@ def test_missing_key_exits_2_before_frozen_check(monkeypatch, capsys):
     assert "TYPESAFE_API_KEY" in capsys.readouterr().err
 
 
-def test_run_reports_e4_as_not_yet_implemented(monkeypatch, fake_server, capsys):
-    # e4 (selective prediction) is the only experiment with no runner yet.
+def test_run_e4_sends_no_requests(monkeypatch, fake_server, capsys):
+    # e4 (selective prediction) is computed later, from saved E1/E2 predictions.
     fake_server.set_responder("/v1/models", lambda seen, n, body: (200, {"models": []}, {}))
     monkeypatch.setenv("TYPESAFE_API_KEY", "sentinel-key")
     monkeypatch.setenv("JEV_BASE_URL", fake_server.base_url)
     assert main(["run", "--experiments", "e4"]) == 0
-    assert "e4: lands in a later sprint, skipped" in capsys.readouterr().out
+    assert "no requests sent" in capsys.readouterr().out
+    assert fake_server.hits("/v1/systemone") == 0
 
 
 def test_run_exits_1_when_preflight_fails(monkeypatch, fake_server):
@@ -91,6 +92,16 @@ def test_run_e1_end_to_end_against_fake_server(monkeypatch, fake_server, tmp_pat
     assert manifest["model"] == "jev-1.0.0"
     assert manifest["seed"] == 1729
     assert (tmp_path / "results" / "latest").resolve() == run_dirs[0].resolve()
+    assert (run_dirs[0] / "summary.csv").exists()
+
+
+def test_summarize_subcommand_rederives_offline(tmp_path):
+    run_dir = tmp_path / "results" / "some-run"
+    run_dir.mkdir(parents=True)
+    (run_dir / "predictions.jsonl").write_text("")
+
+    assert main(["summarize", str(run_dir)]) == 0
+    assert (run_dir / "summary.csv").exists()
 
 
 def test_run_e5_never_uses_cache_even_without_no_cache_flag(monkeypatch, fake_server, tmp_path):

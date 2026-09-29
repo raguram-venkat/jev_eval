@@ -14,6 +14,7 @@ from .frozen import FrozenDataError, verify
 from .results import new_run_dir, point_latest, write_latency_samples, write_manifest, write_predictions
 from .runctx import RunContext
 from .runner import Prediction, run_experiment
+from .summary import write_summary
 
 VALID_EXPERIMENTS = {"e1", "e2", "e3", "e4", "e5"}
 FROZEN_DIR = Path("data/frozen")
@@ -59,12 +60,20 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--limit", type=_positive_int, default=None, help="rows per experiment, for smoke runs")
     run.add_argument("--no-cache", action="store_true", help="bypass the disk response cache")
     run.add_argument("--experiments", type=_experiments, default=sorted(VALID_EXPERIMENTS))
+
+    summarize = sub.add_parser("summarize", help="re-derive summary.csv from an existing run, offline")
+    summarize.add_argument("run_dir", type=Path, help="a results/<run_id> directory")
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+
+    if args.command == "summarize":
+        path = write_summary(args.run_dir)
+        print(f"summary: {path}")
+        return 0
     assert args.command == "run"
 
     try:
@@ -98,7 +107,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         for name in args.experiments:
             if name == "e4":
-                print(f"{name}: lands in a later sprint, skipped")
+                # Computed in summary.csv from saved E1/E2 predictions; sends no requests.
+                print(f"{name}: no requests sent, computed from E1/E2 predictions in summary.csv")
                 continue
 
             if name == "e5":
@@ -143,6 +153,7 @@ def main(argv: list[str] | None = None) -> int:
             write_latency_samples(run_dir, latency_samples)
             model = model or (e5_ctx.model if e5_ctx else None)
         write_manifest(run_dir, model, FROZEN_DIR / "manifest.json", start_time, time.time())
+        write_summary(run_dir)
         point_latest(run_dir)
         print(f"results: {run_dir}")
 
