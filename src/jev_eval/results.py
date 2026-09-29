@@ -39,7 +39,12 @@ def write_predictions(run_dir: Path, predictions: list[Prediction]) -> None:
 
 
 def write_manifest(
-    run_dir: Path, model: str | None, frozen_manifest_path: Path, start_time: float, end_time: float
+    run_dir: Path,
+    model: str | None,
+    frozen_manifest_path: Path,
+    start_time: float,
+    end_time: float,
+    aborted: str | None = None,
 ) -> None:
     frozen_manifest = json.loads(frozen_manifest_path.read_text())
     manifest = {
@@ -51,6 +56,8 @@ def write_manifest(
         "start_time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(start_time)),
         "end_time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(end_time)),
     }
+    if aborted is not None:
+        manifest["aborted"] = aborted
     (run_dir / "manifest.json").write_text(json.dumps(manifest, indent=2))
 
 

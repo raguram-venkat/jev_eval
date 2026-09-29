@@ -6,15 +6,17 @@ import sys
 import time
 from pathlib import Path
 
-from . import e1, e2, e3, e5
+from . import e1, e2, e3, e5, plots, report
 from .cache import Cache
-from .client import JevClient, ModelChangedError, PreflightError, RequestCapError
+from .client import AuthError, JevClient, ModelChangedError, PreflightError, RequestCapError
 from .config import Config, MissingApiKeyError, load_config
 from .frozen import FrozenDataError, verify
 from .results import new_run_dir, point_latest, write_latency_samples, write_manifest, write_predictions
 from .runctx import RunContext
 from .runner import Prediction, run_experiment
 from .summary import write_summary
+
+ABORT_ERRORS = (RequestCapError, ModelChangedError, AuthError)
 
 VALID_EXPERIMENTS = {"e1", "e2", "e3", "e4", "e5"}
 FROZEN_DIR = Path("data/frozen")
@@ -103,6 +105,7 @@ def main(argv: list[str] | None = None) -> int:
     latency_samples = None
     e5_client = None
     e5_ctx = None
+    abort_reason = None
 
     try:
         for name in args.experiments:
@@ -117,8 +120,9 @@ def main(argv: list[str] | None = None) -> int:
                 e5_ctx = RunContext(e5_client)
                 try:
                     latency_samples = e5.run(e5_ctx, args.limit)
-                except (RequestCapError, ModelChangedError) as err:
+                except ABORT_ERRORS as err:
                     print(f"error: {err}", file=sys.stderr)
+                    abort_reason = str(err)
                     exit_code = 1
                     break
                 print(f"{name}: {len(latency_samples)} latency samples")
@@ -130,8 +134,9 @@ def main(argv: list[str] | None = None) -> int:
             try:
                 client.plan(bodies, cap=ctx.remaining_cap)
                 exp_predictions = run_experiment(name, rows, module.build_request, module.parse_result, ctx)
-            except (RequestCapError, ModelChangedError) as err:
+            except ABORT_ERRORS as err:
                 print(f"error: {err}", file=sys.stderr)
+                abort_reason = str(err)
                 exit_code = 1
                 break
 
@@ -143,7 +148,7 @@ def main(argv: list[str] | None = None) -> int:
         if e5_client is not None:
             e5_client.close()
 
-    if predictions or latency_samples:
+    if predictions or latency_samples or abort_reason:
         run_dir = new_run_dir()
         model = None
         if predictions:
@@ -152,8 +157,12 @@ def main(argv: list[str] | None = None) -> int:
         if latency_samples:
             write_latency_samples(run_dir, latency_samples)
             model = model or (e5_ctx.model if e5_ctx else None)
-        write_manifest(run_dir, model, FROZEN_DIR / "manifest.json", start_time, time.time())
-        write_summary(run_dir)
+        write_manifest(run_dir, model, FROZEN_DIR / "manifest.json", start_time, time.time(), aborted=abort_reason)
+
+        if abort_reason is None:
+            write_summary(run_dir)
+            plots.generate_all(run_dir)
+            report.write_report(run_dir)
         point_latest(run_dir)
         print(f"results: {run_dir}")
 

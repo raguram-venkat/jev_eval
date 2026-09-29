@@ -51,7 +51,7 @@ def load_latency_samples(run_dir: Path) -> list[dict]:
     return [json.loads(line) for line in path.read_text().splitlines()]
 
 
-def _frozen_rows(name: str) -> dict[str, dict]:
+def frozen_rows(name: str) -> dict[str, dict]:
     path = FROZEN_DIR / f"{name}.jsonl"
     return {row["id"]: row for row in (json.loads(line) for line in path.read_text().splitlines())}
 
@@ -65,7 +65,7 @@ def summarize_e1(predictions: list[dict]) -> list[dict]:
     e1_preds = [p for p in predictions if p["id"].startswith("b77-") and p["error"] is None]
     if not e1_preds:
         return []
-    frozen = _frozen_rows("banking77_sweep")
+    frozen = frozen_rows("banking77_sweep")
 
     rows = []
     for k in sorted({frozen[p["id"]]["k"] for p in e1_preds}):
@@ -100,7 +100,7 @@ def summarize_e2(predictions: list[dict]) -> list[dict]:
     e2_preds = [p for p in predictions if p["id"].startswith("boolq-") and p["error"] is None]
     if not e2_preds:
         return []
-    frozen = _frozen_rows("boolq")
+    frozen = frozen_rows("boolq")
     y_true = [frozen[p["id"]]["label"] for p in e2_preds]
     p_yes = [p["probabilities"]["yes"] for p in e2_preds]
 
@@ -125,7 +125,7 @@ def summarize_e3(predictions: list[dict]) -> list[dict]:
     e3_preds = [p for p in predictions if p["id"].startswith("yelp-") and p["error"] is None]
     if not e3_preds:
         return []
-    frozen = _frozen_rows("yelp")
+    frozen = frozen_rows("yelp")
     y_true = [frozen[p["id"]]["stars"] for p in e3_preds]
     pred_stars = [p["answer"] for p in e3_preds]
     # The continuous score (1..5 scale) is the argmax star's probability-weighted position;
@@ -151,8 +151,8 @@ def summarize_e3(predictions: list[dict]) -> list[dict]:
 
 def summarize_e4(predictions: list[dict]) -> list[dict]:
     """Selective prediction: reuses E1 (k=20, 77) and E2 predictions already in hand, no new calls."""
-    frozen_b77 = _frozen_rows("banking77_sweep")
-    frozen_boolq = _frozen_rows("boolq")
+    frozen_b77 = frozen_rows("banking77_sweep")
+    frozen_boolq = frozen_rows("boolq")
     rows = []
 
     for k in (20, 77):

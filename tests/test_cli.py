@@ -104,6 +104,23 @@ def test_summarize_subcommand_rederives_offline(tmp_path):
     assert (run_dir / "summary.csv").exists()
 
 
+def test_run_auth_error_mid_run_writes_aborted_manifest_no_report(monkeypatch, fake_server, tmp_path):
+    fake_server.set_responder("/v1/models", lambda seen, n, body: (200, {"models": []}, {}))
+    fake_server.set_responder("/v1/systemone", lambda seen, n, body: (401, {}, {}))
+    monkeypatch.setenv("TYPESAFE_API_KEY", "sentinel-key")
+    monkeypatch.setenv("JEV_BASE_URL", fake_server.base_url)
+
+    assert main(["run", "--limit", "3", "--experiments", "e1"]) == 1
+
+    run_dirs = [d for d in (tmp_path / "results").iterdir() if d.name != "latest"]
+    assert len(run_dirs) == 1
+    manifest = json.loads((run_dirs[0] / "manifest.json").read_text())
+    assert "auth error" in manifest["aborted"]
+    assert not (run_dirs[0] / "REPORT.md").exists()
+    assert not (run_dirs[0] / "summary.csv").exists()
+    assert not (run_dirs[0] / "plots").exists()
+
+
 def test_run_e5_never_uses_cache_even_without_no_cache_flag(monkeypatch, fake_server, tmp_path):
     fake_server.set_responder("/v1/models", lambda seen, n, body: (200, {"models": []}, {}))
     fake_server.set_responder(
