@@ -2,7 +2,15 @@ import json
 
 import pytest
 
+from jev_eval import cli, questions, results
 from jev_eval.cli import build_parser, main
+
+
+@pytest.fixture(autouse=True)
+def _isolate_cli_io(monkeypatch, tmp_path):
+    """Every `run` writes to CACHE_DIR/RESULTS_DIR; never let a test touch the real ones."""
+    monkeypatch.setattr(cli, "CACHE_DIR", tmp_path / "cache")
+    monkeypatch.setattr(results, "RESULTS_DIR", tmp_path / "results")
 
 
 def test_help_lists_run(capsys):
@@ -33,12 +41,13 @@ def test_missing_key_exits_2_before_frozen_check(monkeypatch, capsys):
     assert "TYPESAFE_API_KEY" in capsys.readouterr().err
 
 
-def test_run_succeeds_with_key_valid_frozen_data_and_reachable_jev(monkeypatch, fake_server):
-    # e2-e5 aren't implemented yet, so this only exercises preflight/config/frozen wiring.
+def test_run_reports_e4_as_not_yet_implemented(monkeypatch, fake_server, capsys):
+    # e4 (selective prediction) is the only experiment with no runner yet.
     fake_server.set_responder("/v1/models", lambda seen, n, body: (200, {"models": []}, {}))
     monkeypatch.setenv("TYPESAFE_API_KEY", "sentinel-key")
     monkeypatch.setenv("JEV_BASE_URL", fake_server.base_url)
-    assert main(["run", "--experiments", "e2,e3,e4,e5"]) == 0
+    assert main(["run", "--experiments", "e4"]) == 0
+    assert "e4: lands in a later sprint, skipped" in capsys.readouterr().out
 
 
 def test_run_exits_1_when_preflight_fails(monkeypatch, fake_server):
@@ -49,10 +58,6 @@ def test_run_exits_1_when_preflight_fails(monkeypatch, fake_server):
 
 
 def test_run_e1_end_to_end_against_fake_server(monkeypatch, fake_server, tmp_path):
-    from jev_eval import questions, results
-
-    monkeypatch.setattr(results, "RESULTS_DIR", tmp_path / "results")
-
     fake_server.set_responder("/v1/models", lambda seen, n, body: (200, {"models": []}, {}))
 
     def echo_first_option(seen, n, body):
@@ -86,3 +91,23 @@ def test_run_e1_end_to_end_against_fake_server(monkeypatch, fake_server, tmp_pat
     assert manifest["model"] == "jev-1.0.0"
     assert manifest["seed"] == 1729
     assert (tmp_path / "results" / "latest").resolve() == run_dirs[0].resolve()
+
+
+def test_run_e5_never_uses_cache_even_without_no_cache_flag(monkeypatch, fake_server, tmp_path):
+    fake_server.set_responder("/v1/models", lambda seen, n, body: (200, {"models": []}, {}))
+    fake_server.set_responder(
+        "/v1/systemone",
+        lambda seen, n, body: (200, {
+            "model": "jev-1.0.0",
+            "answers": {qid: {"type": "choice", "choice": "x", "probabilities": {}} for qid in body["questions"]},
+        }, {}),
+    )
+    monkeypatch.setenv("TYPESAFE_API_KEY", "sentinel-key")
+    monkeypatch.setenv("JEV_BASE_URL", fake_server.base_url)
+
+    assert main(["run", "--limit", "5", "--experiments", "e5"]) == 0  # note: no --no-cache
+
+    run_dirs = [d for d in (tmp_path / "results").iterdir() if d.name != "latest"]
+    samples = (run_dirs[0] / "latency_samples.jsonl").read_text().splitlines()
+    assert len(samples) == 20  # 5 single + 5 multi1 + 5 multi5 + 5 models, limit=5
+    assert not (tmp_path / "cache").exists()

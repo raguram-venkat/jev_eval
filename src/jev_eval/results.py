@@ -8,6 +8,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 from . import questions
+from .e5 import LatencySample
 from .runner import Prediction
 
 RESULTS_DIR = Path("results")
@@ -51,6 +52,12 @@ def write_manifest(
         "end_time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(end_time)),
     }
     (run_dir / "manifest.json").write_text(json.dumps(manifest, indent=2))
+
+
+def write_latency_samples(run_dir: Path, samples: list[LatencySample]) -> None:
+    with (run_dir / "latency_samples.jsonl").open("w") as f:
+        for s in samples:
+            f.write(json.dumps(asdict(s)) + "\n")
 
 
 def point_latest(run_dir: Path) -> None:

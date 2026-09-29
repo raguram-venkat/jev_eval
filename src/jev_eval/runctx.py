@@ -18,6 +18,14 @@ class RunContext:
         self._failures: dict[str, int] = defaultdict(int)
 
     @property
+    def client(self) -> JevClient:
+        return self._client
+
+    @property
+    def model(self) -> str | None:
+        return self._model
+
+    @property
     def sent(self) -> int:
         return self._sent
 

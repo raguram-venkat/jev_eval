@@ -6,12 +6,12 @@ import sys
 import time
 from pathlib import Path
 
-from . import e1
+from . import e1, e2, e3, e5
 from .cache import Cache
 from .client import JevClient, ModelChangedError, PreflightError, RequestCapError
 from .config import Config, MissingApiKeyError, load_config
 from .frozen import FrozenDataError, verify
-from .results import new_run_dir, point_latest, write_manifest, write_predictions
+from .results import new_run_dir, point_latest, write_latency_samples, write_manifest, write_predictions
 from .runctx import RunContext
 from .runner import Prediction, run_experiment
 
@@ -21,7 +21,9 @@ CACHE_DIR = Path("cache")
 
 # Only experiments with a runner module registered here are implemented; the rest are
 # valid CLI names (so scripts can pass the full list) that print a note and are skipped.
-EXPERIMENTS = {"e1": e1}
+# e5 (latency) has its own dedicated code path below, since it never uses the cache and
+# doesn't produce Predictions.
+EXPERIMENTS = {"e1": e1, "e2": e2, "e3": e3}
 
 
 def make_client(config: Config, no_cache: bool) -> JevClient:
@@ -89,20 +91,37 @@ def main(argv: list[str] | None = None) -> int:
     predictions: list[Prediction] = []
     exit_code = 0
 
+    latency_samples = None
+    e5_client = None
+    e5_ctx = None
+
     try:
         for name in args.experiments:
-            module = EXPERIMENTS.get(name)
-            if module is None:
+            if name == "e4":
                 print(f"{name}: lands in a later sprint, skipped")
                 continue
 
+            if name == "e5":
+                # Never cached, regardless of --no-cache.
+                e5_client = make_client(config, no_cache=True)
+                e5_ctx = RunContext(e5_client)
+                try:
+                    latency_samples = e5.run(e5_ctx, args.limit)
+                except (RequestCapError, ModelChangedError) as err:
+                    print(f"error: {err}", file=sys.stderr)
+                    exit_code = 1
+                    break
+                print(f"{name}: {len(latency_samples)} latency samples")
+                continue
+
+            module = EXPERIMENTS[name]
             rows = module.stratified_sample(module.load_rows(), args.limit)
             bodies = [module.build_request(r) for r in rows]
             try:
                 client.plan(bodies, cap=ctx.remaining_cap)
                 exp_predictions = run_experiment(name, rows, module.build_request, module.parse_result, ctx)
-            except (RequestCapError, ModelChangedError) as e:
-                print(f"error: {e}", file=sys.stderr)
+            except (RequestCapError, ModelChangedError) as err:
+                print(f"error: {err}", file=sys.stderr)
                 exit_code = 1
                 break
 
@@ -111,11 +130,18 @@ def main(argv: list[str] | None = None) -> int:
             print(f"{name}: {len(exp_predictions)} rows, {failed} failed")
     finally:
         client.close()
+        if e5_client is not None:
+            e5_client.close()
 
-    if predictions:
+    if predictions or latency_samples:
         run_dir = new_run_dir()
-        write_predictions(run_dir, predictions)
-        model = next((p.model for p in predictions if p.model), None)
+        model = None
+        if predictions:
+            write_predictions(run_dir, predictions)
+            model = next((p.model for p in predictions if p.model), None)
+        if latency_samples:
+            write_latency_samples(run_dir, latency_samples)
+            model = model or (e5_ctx.model if e5_ctx else None)
         write_manifest(run_dir, model, FROZEN_DIR / "manifest.json", start_time, time.time())
         point_latest(run_dir)
         print(f"results: {run_dir}")
