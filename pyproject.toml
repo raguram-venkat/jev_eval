@@ -1,14 +1,13 @@
 [project]
-name = "system-one"
+name = "twinbench"
 version = "0.1.0"
-description = "Add your description here"
+description = "Reproducible CLI benchmark for Jev (TypeSafe AI System One) typed decisions"
 readme = "README.md"
 authors = [
     { name = "Raguram", email = "raguram4123@gmail.com" }
 ]
 requires-python = ">=3.12"
 dependencies = [
-    "datasets>=5.0.1",
     "httpx>=0.28.1",
     "matplotlib>=3.11.2",
     "numpy>=2.5.3",
@@ -19,13 +18,16 @@ dependencies = [
 ]
 
 [project.scripts]
-system-one = "system_one:main"
+twinbench = "twinbench.cli:main"
+
+[dependency-groups]
+dev = [
+    "datasets>=5.0.1",
+]
+
+[tool.uv.build-backend]
+module-name = "twinbench"
 
 [build-system]
 requires = ["uv_build>=0.12.16,<0.13.0"]
 build-backend = "uv_build"
-
-[[tool.uv.index]]
-name = "pytorch-cpu"
-url = "https://download.pytorch.org/whl/cpu"
-explicit = true

@@ -11,3 +11,7 @@ wheels/
 .venv/
 .loop/
 *.pyc
+
+# Benchmark outputs (cache must never be committed)
+cache/
+results/
