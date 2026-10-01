@@ -2,7 +2,7 @@ name: Deploy results site to Pages
 
 on:
   push:
-    branches: [master]
+    branches: [main]
     paths: ["site/**", ".github/workflows/deploy-site.yml"]
   workflow_dispatch:
 

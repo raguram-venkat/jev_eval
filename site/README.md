@@ -3,7 +3,7 @@
 The public results page for the jev-eval benchmark — methodology, experiment-by-experiment
 results and takeaways, built from one real run's numbers (`src/data/results.js`). React + Vite,
 no backend; deploys to GitHub Pages via `.github/workflows/deploy-site.yml` on every push to
-`master` that touches `site/`.
+`main` that touches `site/`.
 
 ```
 npm install
