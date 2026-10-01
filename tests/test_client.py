@@ -2,8 +2,8 @@ import threading
 
 import pytest
 
-from jev_eval.client import AuthError, JevClient, ModelChangedError, PreflightError, RequestCapError
-from jev_eval.runctx import RunContext
+from jev_eval.client.http import AuthError, JevClient, ModelChangedError, PreflightError, RequestCapError
+from jev_eval.client.runctx import RunContext
 
 
 def _client(fake_server, **kwargs):
@@ -134,7 +134,7 @@ def test_plan_raises_when_over_cap(fake_server):
 
 
 def test_plan_only_counts_uncached_bodies(fake_server, tmp_path):
-    from jev_eval.cache import Cache
+    from jev_eval.client.cache import Cache
 
     cache = Cache(tmp_path)
     client = JevClient(base_url=fake_server.base_url, api_key="sentinel-key", cache=cache)

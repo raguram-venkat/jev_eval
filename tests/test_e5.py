@@ -1,6 +1,6 @@
-from jev_eval import e5
-from jev_eval.client import JevClient
-from jev_eval.runctx import RunContext
+from jev_eval.client.http import JevClient
+from jev_eval.client.runctx import RunContext
+from jev_eval.experiments import e5
 
 
 def test_scaled_counts_default():

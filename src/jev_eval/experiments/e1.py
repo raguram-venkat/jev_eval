@@ -4,9 +4,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from . import questions
-from .client import Result
-from .parsers import parse_choice
+from ..client.http import Result
+from ..protocol import questions
+from ..protocol.parsers import parse_choice
 from .runner import Prediction
 from .sampling import stratified_sample as _stratified_sample
 

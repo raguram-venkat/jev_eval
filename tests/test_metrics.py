@@ -2,7 +2,7 @@ import math
 
 import pytest
 
-from jev_eval import baselines, metrics
+from jev_eval.analysis import baselines, metrics
 
 
 def test_choice_accuracy():

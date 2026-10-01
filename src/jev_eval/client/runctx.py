@@ -4,7 +4,7 @@ from __future__ import annotations
 import threading
 from collections import defaultdict
 
-from .client import JevClient, ModelChangedError, RequestCapError, Result
+from .http import JevClient, ModelChangedError, RequestCapError, Result
 
 
 class RunContext:

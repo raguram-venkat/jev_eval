@@ -7,9 +7,9 @@ import time
 from dataclasses import asdict
 from pathlib import Path
 
-from . import questions
-from .e5 import LatencySample
-from .runner import Prediction
+from .experiments.e5 import LatencySample
+from .experiments.runner import Prediction
+from .protocol import questions
 
 RESULTS_DIR = Path("results")
 SEED = 1729

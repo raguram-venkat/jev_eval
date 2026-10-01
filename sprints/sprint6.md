@@ -1,9 +1,9 @@
 # Sprint 6
 
-Built `plots.py` (the seven plots PREMISE.md actually names: label sweep with CI and
+Built `analysis/plots.py` (the seven plots PREMISE.md actually names: label sweep with CI and
 chance line, Choice/Noul reliability diagrams, k=77 confusion bar chart, Yelp 5x5 score
 confusion matrix, E4 selective-prediction curves, E5 latency boxplots — all Agg backend,
-non-empty even on missing data) and `report.py` (`REPORT.md`: a results table, one finding
+non-empty even on missing data) and `analysis/report.py` (`REPORT.md`: a results table, one finding
 paragraph per experiment with CIs and the baseline it beats, a "Where Jev fails" section
 with real misclassified examples, and a caveats section). Also added abort-path handling:
 a run that hits an auth error, model-version change or the request cap now writes a

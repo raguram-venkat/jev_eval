@@ -10,8 +10,8 @@ import time
 from dataclasses import dataclass
 
 from . import e1
-from .questions import BANKING77_INSTRUCTIONS, BANKING77_QID, MODEL
-from .runctx import RunContext
+from ..client.runctx import RunContext
+from ..protocol.questions import BANKING77_INSTRUCTIONS, BANKING77_QID, MODEL
 
 WARMUPS = 10
 SINGLES = 100

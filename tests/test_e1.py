@@ -1,8 +1,9 @@
-from jev_eval import e1, questions
-from jev_eval.cache import Cache
-from jev_eval.client import JevClient
-from jev_eval.runctx import RunContext
-from jev_eval.runner import run_experiment
+from jev_eval.client.cache import Cache
+from jev_eval.client.http import JevClient
+from jev_eval.client.runctx import RunContext
+from jev_eval.experiments import e1
+from jev_eval.experiments.runner import run_experiment
+from jev_eval.protocol import questions
 
 
 def test_stratified_sample_covers_every_group():

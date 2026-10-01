@@ -1,9 +1,10 @@
 import pytest
 
-from jev_eval import e2, e3, questions
-from jev_eval.client import JevClient
-from jev_eval.runctx import RunContext
-from jev_eval.runner import run_experiment
+from jev_eval.client.http import JevClient
+from jev_eval.client.runctx import RunContext
+from jev_eval.experiments import e2, e3
+from jev_eval.experiments.runner import run_experiment
+from jev_eval.protocol import questions
 
 
 def test_e2_stratified_sample_is_balanced():

@@ -2,7 +2,7 @@
 
 Added E2 (BoolQ yes/no) and E3 (Yelp scoring), reusing sprint 3's dataset-agnostic runner —
 each is just a `load_rows`/`build_request`/`parse_result` module now, plus a shared
-`sampling.py` for stratified `--limit` (balanced yes/no for E2, every star rating for E3).
+`experiments/sampling.py` for stratified `--limit` (balanced yes/no for E2, every star rating for E3).
 Added E5 (latency): warmups, 100 sequential single-question calls, 30 single- vs 30 five-
 question comparisons, and a `/v1/models` network baseline, all on a cache-disabled client
 since a latency number from disk isn't a latency number. All three are wired into `jev-eval run`.

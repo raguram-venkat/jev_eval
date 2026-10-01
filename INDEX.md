@@ -14,28 +14,26 @@ confidence mean anything": calibration (ECE, Brier, AUROC), not just accuracy. F
 
 ## How it got built
 
-The project started with a different automation attempt — a custom "lathe" harness living in
-a now-deleted `.loop/` directory, driving the work through its own planning/task files. It
-didn't work out, so it was scrapped outright: the branch it lived on was deleted, and the
-code it had produced was thrown away and rebuilt directly, sprint by sprint, with a plain git
-history and one short note per sprint in `sprints/`. No upfront plan document, no task
-tracker — each sprint just did the next load-bearing piece and moved on.
+The code is organized by concern rather than left flat: `protocol/` (the `/v1/systemone`
+wire format), `client/` (talking to Jev), `experiments/` (one module per dataset),
+`analysis/` (turning predictions into numbers and plots), with `cli.py`, `config.py`,
+`frozen.py` and `results.py` at the top level tying it together. The sprints below built it
+in that order of concern, not that order of directory.
 
 The eight sprints, in the order they actually happened and why that order:
 
 1. **Foundation** — package skeleton, `Config` (reads the API key, never leaks it),
-   `frozen.py` (verifies `data/frozen/` against its sha256 manifest), and `questions.py`
-   (the instructions/criteria text for each dataset). Nothing here talks to the network —
-   it's the stuff that has to be right before a single request is sent.
+   `frozen.py` (verifies `data/frozen/` against its sha256 manifest), and
+   `protocol/questions.py` (the instructions/criteria text for each dataset). Nothing here
+   talks to the network — it's the stuff that has to be right before a single request is sent.
 2. **Talk to Jev** — `JevClient` (retry, typed errors, a `/v1/models` preflight), a disk
    `Cache`, and `RunContext` (the request cap and model-version guard). Still no live calls;
    all tested against a fake loopback HTTP server. This had to exist before any experiment
    could run, which is why it came before E1.
 3. **First real numbers** — this is where the actual `/v1/systemone` wire format got learned
-   (it's not in `PREMISE.md`; see "the request/response shape" below), `parsers.py` got
-   written against real captured fixtures, and E1 (Banking77) ran live for the first time.
-   One milestone, one real number — proof the whole pipeline works before building four more
-   copies of it.
+   (it's not in `PREMISE.md`), `protocol/parsers.py` got written against real captured
+   fixtures, and E1 (Banking77) ran live for the first time. One milestone, one real number —
+   proof the whole pipeline works before building four more copies of it.
 4. **E2 and E3** reused sprint 3's runner unchanged (see "the dataset-agnostic runner"
    below) — only the dataset-specific pieces needed writing. **E5** (latency) came in the
    same sprint because it shares nothing with E1-E3's machinery; it's a different, simpler
@@ -50,6 +48,10 @@ The eight sprints, in the order they actually happened and why that order:
 8. **The full live run and this project's one results artifact** — 2,040 real predictions,
    zero failures, and the final demo page (link in `sprints/sprint8.md`, and in the table
    below).
+
+A ninth sprint came after: the flat `src/jev_eval/` directory got split into the
+`protocol/`/`client/`/`experiments/`/`analysis/` layout described above, with every import
+and every markdown reference updated to match (`sprints/sprint9.md`).
 
 Each sprint's commit and `sprints/sprintN.md` note says what shipped; `DECISIONS.md` has one
 line per non-obvious call, with the reason, grouped the same way.
@@ -81,8 +83,8 @@ Five experiments:
   into a concurrency-4 accuracy run would make the timing meaningless.
 
 Every accuracy-type number carries a 95% bootstrap CI (1000 resamples, fixed seed) — one
-generic `bootstrap_ci()` helper in `metrics.py` that every metric closes over, so a new metric
-gets a CI for free instead of a bespoke interval routine.
+generic `bootstrap_ci()` helper in `analysis/metrics.py` that every metric closes over, so a
+new metric gets a CI for free instead of a bespoke interval routine.
 
 ## How a request actually flows
 
@@ -92,22 +94,25 @@ Tracing `uv run jev-eval run --experiments e1`:
    `data/frozen/` (exits 1 on a hash mismatch) — all before any network call.
 2. Builds a `JevClient` (cached unless `--no-cache`) and runs its `/v1/models` preflight
    (exits 1 if that fails).
-3. For E1: `e1.load_rows()` reads the frozen jsonl, `e1.stratified_sample()` applies
-   `--limit` (round-robin across every `(k, draw)` group so even a small limit touches every
-   condition), then `questions.banking77_request()` builds each request body.
-4. `runner.run_experiment()` fans those out through a `ThreadPoolExecutor` (concurrency 4).
-   Each request goes through `RunContext.run()`, which reserves a slot against the 4000
-   request cap, calls `JevClient.request()` (cache check → POST with retry/backoff → record
-   model version), and folds a failure into that experiment's failure count.
-5. `JevClient.request()` checks the cache first; on a miss it POSTs, retries 429/5xx with
-   backoff, raises `AuthError` immediately on 401/403 (no retry), and on success writes the
-   response into the cache keyed by `sha256(requested_model + canonical_body)`.
-6. A successful `Result` gets handed to `e1.parse_result()`, which calls
-   `parsers.parse_choice()` (clips/renormalizes probabilities, checks the answer equals the
-   argmax) and returns a `Prediction`.
+3. For E1: `experiments/e1.py`'s `load_rows()` reads the frozen jsonl, `stratified_sample()`
+   applies `--limit` (round-robin across every `(k, draw)` group so even a small limit touches
+   every condition), then `protocol/questions.py`'s `banking77_request()` builds each request
+   body.
+4. `experiments/runner.py`'s `run_experiment()` fans those out through a `ThreadPoolExecutor`
+   (concurrency 4). Each request goes through `RunContext.run()` (`client/runctx.py`), which
+   reserves a slot against the 4000 request cap, calls `JevClient.request()`
+   (`client/http.py`; cache check → POST with retry/backoff → record model version), and folds
+   a failure into that experiment's failure count.
+5. `JevClient.request()` checks the cache (`client/cache.py`) first; on a miss it POSTs,
+   retries 429/5xx with backoff, raises `AuthError` immediately on 401/403 (no retry), and on
+   success writes the response into the cache keyed by `sha256(requested_model + canonical_body)`.
+6. A successful `Result` gets handed to `experiments/e1.py`'s `parse_result()`, which calls
+   `protocol/parsers.py`'s `parse_choice()` (clips/renormalizes probabilities, checks the
+   answer equals the argmax) and returns a `Prediction`.
 7. Back in `cli.py`: `results.write_predictions()`, `write_manifest()`, then
-   `summary.write_summary()` (metrics + CIs + baselines → `summary.csv`), `plots.generate_all()`
-   (7 PNGs), `report.write_report()` (`REPORT.md`), and `results/latest` gets repointed.
+   `analysis/summary.py`'s `write_summary()` (metrics + CIs + baselines → `summary.csv`),
+   `analysis/plots.py`'s `generate_all()` (7 PNGs), `analysis/report.py`'s `write_report()`
+   (`REPORT.md`), and `results/latest` gets repointed.
 
 If step 4 or 5 raises `ModelChangedError`, `RequestCapError` or `AuthError`, that whole
 sequence stops: `manifest.json` gets written with an `aborted` reason and no
@@ -117,17 +122,18 @@ sequence stops: `manifest.json` gets written with an `aborted` reason and no
 
 The full list is in `DECISIONS.md`. These are the ones that shaped everything downstream:
 
-- **The dataset-agnostic runner.** `runner.run_experiment()` knows nothing about Banking77,
-  BoolQ or Yelp — it takes rows plus a `request_fn`/`parse_fn` pair. E2 and E3 are each about
-  60 lines because of this; adding a fourth dataset later would be the same shape again.
+- **The dataset-agnostic runner.** `experiments/runner.py`'s `run_experiment()` knows nothing
+  about Banking77, BoolQ or Yelp — it takes rows plus a `request_fn`/`parse_fn` pair. E2 and
+  E3 are each about 60 lines because of this; adding a fourth dataset later would be the same
+  shape again, living next to `e1.py`/`e2.py`/`e3.py`/`e5.py` in `experiments/`.
 - **The cache key is `sha256(requested_model + canonical_body)`, not the returned model
   version** — the version you get back isn't known until the response arrives, so it can't be
   part of the key. Every cache entry stores the version it came from, and every response (live
   or cached) feeds the model-version guard, so a stale entry from a different model version
   aborts the run instead of silently mixing results.
-- **Predictions aren't tagged with which experiment produced them** — `summary.py` and
-  `plots.py` bucket `predictions.jsonl` rows by id prefix (`b77-`/`boolq-`/`yelp-`) instead,
-  since the prefix already does that job reliably.
+- **Predictions aren't tagged with which experiment produced them** — `analysis/summary.py`
+  and `analysis/plots.py` bucket `predictions.jsonl` rows by id prefix
+  (`b77-`/`boolq-`/`yelp-`) instead, since the prefix already does that job reliably.
 - **Choice's Brier/ECE sum over each row's own probability dict**, not a shared label list —
   Banking77 rows pooled across draws (even at the same k) can have completely different
   option subsets, so there's no single shared label space to score against.

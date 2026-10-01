@@ -8,10 +8,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from . import questions
-from .client import JevClient
+from .client.http import JevClient
 from .config import load_config
 from .frozen import verify
+from .protocol import questions
 
 FIXTURES_DIR = Path("tests/fixtures")
 FROZEN_DIR = Path("data/frozen")

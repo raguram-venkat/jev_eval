@@ -1,7 +1,7 @@
 import json
 
-from jev_eval.cache import Cache
-from jev_eval.client import JevClient
+from jev_eval.client.cache import Cache
+from jev_eval.client.http import JevClient
 
 
 def test_second_identical_request_is_served_from_cache(fake_server, tmp_path):

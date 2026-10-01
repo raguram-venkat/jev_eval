@@ -2,8 +2,9 @@ import json
 
 import pytest
 
-from jev_eval import cli, questions, results
+from jev_eval import cli, results
 from jev_eval.cli import build_parser, main
+from jev_eval.protocol import questions
 
 
 @pytest.fixture(autouse=True)

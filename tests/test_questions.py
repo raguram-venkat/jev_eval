@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from jev_eval.questions import (
+from jev_eval.protocol.questions import (
     BANKING77_QID,
     BOOLQ_QID,
     YELP_LEVELS,

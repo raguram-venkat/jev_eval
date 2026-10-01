@@ -1,16 +1,16 @@
-"""E3: Yelp ordinal scoring (Score)."""
+"""E2: BoolQ yes/no calibration (Noul)."""
 from __future__ import annotations
 
 import json
 from pathlib import Path
 
-from . import questions
-from .client import Result
-from .parsers import parse_score
+from ..client.http import Result
+from ..protocol import questions
+from ..protocol.parsers import parse_noul
 from .runner import Prediction
 from .sampling import stratified_sample as _stratified_sample
 
-FROZEN_FILE = Path("data/frozen/yelp.jsonl")
+FROZEN_FILE = Path("data/frozen/boolq.jsonl")
 
 
 def load_rows() -> list[dict]:
@@ -18,20 +18,20 @@ def load_rows() -> list[dict]:
 
 
 def stratified_sample(rows: list[dict], limit: int | None) -> list[dict]:
-    return _stratified_sample(rows, limit, group_key=lambda r: r["stars"])
+    return _stratified_sample(rows, limit, group_key=lambda r: r["label"])
 
 
 def build_request(row: dict) -> dict:
-    return questions.yelp_request(row)
+    return questions.boolq_request(row)
 
 
 def parse_result(row: dict, result: Result) -> Prediction:
-    parsed = parse_score(result.data, questions.YELP_QID, num_levels=len(questions.YELP_LEVELS))
+    parsed = parse_noul(result.data, questions.BOOLQ_QID)
     return Prediction(
         id=row["id"],
-        answer=parsed.stars,
-        probabilities={str(stars): p for stars, p in parsed.probabilities.items()},
-        confidence=parsed.confidence,
+        answer=parsed.p_yes >= 0.5,
+        probabilities={"yes": parsed.p_yes, "no": parsed.p_no},
+        confidence=None,  # Noul has no separate confidence field on the wire
         latency_ms=result.latency_ms,
         model=result.model,
         cache_hit=result.cache_hit,

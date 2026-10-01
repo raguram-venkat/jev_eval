@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from jev_eval.parsers import ParseError, parse_choice, parse_noul, parse_score
+from jev_eval.protocol.parsers import ParseError, parse_choice, parse_noul, parse_score
 
 FIXTURES = Path("tests/fixtures")
 

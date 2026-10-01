@@ -1,11 +1,11 @@
 # Sprint 5
 
-Built `metrics.py` (accuracy, macro-F1, multiclass Brier, ECE, Noul accuracy/Brier/AUROC,
-Score MAE/exact-accuracy/Spearman, selective-prediction coverage) and a single generic
-`bootstrap_ci()` every metric reuses for its 95% CI (1000 resamples, fixed seed 1729).
-Added `baselines.py` (chance 1/k, 0.5/Brier-0.25 for Noul, always-3-stars for Score,
-computed from the actual sample) and `summary.py`, which derives `summary.csv` — one row
-per (experiment, condition) with every metric, CI and baseline — straight from an existing
+Built `analysis/metrics.py` (accuracy, macro-F1, multiclass Brier, ECE, Noul
+accuracy/Brier/AUROC, Score MAE/exact-accuracy/Spearman, selective-prediction coverage) and
+a single generic `bootstrap_ci()` every metric reuses for its 95% CI (1000 resamples, fixed
+seed 1729). Added `analysis/baselines.py` (chance 1/k, 0.5/Brier-0.25 for Noul, always-3-stars
+for Score, computed from the actual sample) and `analysis/summary.py`, which derives
+`summary.csv` — one row per (experiment, condition) with every metric, CI and baseline — straight from an existing
 run's `predictions.jsonl`, no network needed. E4 (selective prediction) reuses saved E1/E2
 predictions and sends zero requests. Wired a `jev-eval summarize <run_dir>` subcommand and
 auto-summary at the end of `run`.

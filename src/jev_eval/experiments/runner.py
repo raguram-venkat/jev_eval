@@ -10,8 +10,8 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import Any, Callable
 
-from .client import Result
-from .runctx import RunContext
+from ..client.http import Result
+from ..client.runctx import RunContext
 
 
 @dataclass

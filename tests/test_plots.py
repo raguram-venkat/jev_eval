@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from jev_eval import plots, summary
+from jev_eval.analysis import plots, summary
 
 FROZEN = Path("data/frozen")
 
