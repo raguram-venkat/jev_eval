@@ -36,19 +36,28 @@ export default function FailuresSection() {
           <h2>Where it fails</h2>
           <span className="tag">real misses, not cherry-picked wins</span>
         </div>
-        <p className="sec-note">
-          Five real misclassifications, sorted worst to borderline by how much probability the
-          correct answer got. The two bars are both read off Jev's own probability distribution
-          for that question, on the same 0&ndash;100 scale: what the correct answer got, and what
-          Jev's actual pick got. Where a card also lists a <strong>confidence</strong> number,
-          that's a different thing &mdash; Jev's own separately self-reported certainty in its
-          answer, not the probability above it. The dashed line is the cutoff E4&apos;s gate
-          applies to that confidence number to auto-answer vs. escalate to a human, at a 90%
-          accuracy target (BoolQ has no self-reported confidence, so its gate falls back to its
-          yes/no probability). <strong>Confident miss</strong> = correct answer under 5%.{" "}
-          <strong>Coin flip</strong> = the two bars are within 10 points. <strong>Moderate miss</strong> =
-          everything else.
-        </p>
+        <ul className="sec-note">
+          <li>
+            Five real misclassifications are shown, sorted from worst to borderline by the
+            probability Jev gave the correct answer.
+          </li>
+          <li>
+            The two bars use Jev&apos;s probability distribution for the question, on the same
+            0&ndash;100 scale: one shows the correct answer&apos;s probability and the other shows
+            the probability of Jev&apos;s actual pick.
+          </li>
+          <li>
+            <strong>Confidence</strong> is separate from those bars: it is Jev&apos;s self-reported
+            certainty. The dashed line shows the cutoff E4&apos;s gate uses to auto-answer or
+            escalate to a human at a 90% accuracy target. BoolQ has no self-reported confidence,
+            so its gate uses the yes/no probability instead.
+          </li>
+          <li>
+            <strong>Confident miss</strong> means the correct answer is under 5%. <strong>Coin flip</strong>{" "}
+            means the two bars are within 10 points. <strong>Moderate miss</strong> means everything
+            else.
+          </li>
+        </ul>
       </Reveal>
       <Reveal delay={80}>
         <div className="fail-grid">
