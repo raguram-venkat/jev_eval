@@ -1,6 +1,33 @@
 import { failures } from "../../data/results";
 import Reveal from "../Reveal";
 
+function pctLabel(p) {
+  return p < 0.005 ? "under 0.5%" : `${Math.round(p * 100)}%`;
+}
+
+function shapeOf(f) {
+  if (f.pTrue < 0.05) return { tag: "confident-miss", label: "Confident miss" };
+  if (Math.abs(f.pPred - f.pTrue) < 0.1) return { tag: "coin-flip", label: "Coin flip" };
+  return { tag: "moderate-miss", label: "Moderate miss" };
+}
+
+function gateVerdict(gate) {
+  if (gate.verdict === "na") return "Not gated";
+  return gate.verdict === "escalated" ? "Escalated" : "Auto-handled";
+}
+
+function BarRow({ label, value, pct, kind, row }) {
+  return (
+    <>
+      <span className="bar-label" style={{ gridRow: row }}>{label}</span>
+      <div className="bar-track" style={{ gridRow: row }}>
+        <div className={`bar-fill ${kind}`} style={{ width: `${Math.max(pct * 100, 1.5)}%` }} />
+      </div>
+      <span className="bar-val" style={{ gridRow: row }}>{value}</span>
+    </>
+  );
+}
+
 export default function FailuresSection() {
   return (
     <section id="failures" className="section">
@@ -10,29 +37,60 @@ export default function FailuresSection() {
           <span className="tag">real misses, not cherry-picked wins</span>
         </div>
         <p className="sec-note">
-          Five real misclassifications, picked to show the different shapes failure takes here
-          &mdash; some are the model being wrong, some are arguably the ground truth being
-          debatable.
+          Five real misclassifications, sorted worst to borderline by how much probability the
+          correct answer got. Every card shows the same two numbers on the same 0&ndash;100 scale:
+          what the correct answer got, and what Jev's actual pick got. The dashed line is the
+          confidence cutoff E4&apos;s gate would use to auto-answer vs. escalate to a human, at a
+          90% accuracy target. <strong>Confident miss</strong> = correct answer under 5%.{" "}
+          <strong>Coin flip</strong> = the two bars are within 10 points. <strong>Moderate miss</strong> =
+          everything else.
         </p>
       </Reveal>
       <Reveal delay={80}>
         <div className="fail-grid">
-          {failures.map((f) => (
-            <div key={f.quote} className="fail-card">
-              <div>
-                <div className="quote">{f.quote}</div>
-                <div className="why">
-                  {f.why} &middot; {f.detail}
+          {failures.map((f) => {
+            const shape = shapeOf(f);
+            const verdict = gateVerdict(f.gate);
+            return (
+              <div key={f.quote} className="fail-card">
+                <div className="fail-head">
+                  <div className="quote">{f.quote}</div>
+                  <div className="why">
+                    {f.cause} &middot; {f.dataset}
+                    {f.starDistance != null && <> &middot; {f.starDistance}&#9733; off</>}
+                  </div>
+                </div>
+
+                <div className="fail-bar-group">
+                  <BarRow label="Correct" value={pctLabel(f.pTrue)} pct={f.pTrue} kind="true" row={1} />
+                  <BarRow label="Jev chose" value={pctLabel(f.pPred)} pct={f.pPred} kind="pred" row={2} />
+                  {f.gate.pct != null && (
+                    <div className="gate-line" style={{ marginLeft: `${f.gate.pct * 100}%` }} />
+                  )}
+                </div>
+
+                {f.top3 && (
+                  <div className="top3">
+                    Top 3:{" "}
+                    {f.top3.map(([label, p], i) => (
+                      <span key={label}>
+                        {i > 0 && " · "}
+                        {label} {Math.round(p * 100)}%
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                <div className="fail-foot">
+                  <span className={`shape-tag ${shape.tag}`}>{shape.label}</span>
+                  <span className={`gate-tag ${f.gate.verdict}`}>
+                    Gate @90%: {verdict}
+                  </span>
+                  <span className="gate-note">{f.gate.note}</span>
                 </div>
               </div>
-              <div className="swap">
-                <span className="true">{f.true}</span>
-                <span className="arrow">&rarr;</span>
-                <span className="pred">{f.pred}</span>
-                <span className="conf">{f.conf}</span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </Reveal>
     </section>
