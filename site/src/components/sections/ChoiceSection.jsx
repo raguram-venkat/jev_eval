@@ -20,7 +20,7 @@ export default function ChoiceSection() {
           <p className="finding">
             Accuracy stays within a point of ceiling through <b>k=5</b>, gives up{" "}
             <b>10 points</b> going from 20 to 77 options, and calibration error (ECE) climbs{" "}
-            <b>16&times;</b> from k=2 to k=77 &mdash; confidence erodes even faster than
+            <b>17&times;</b> from k=2 to k=77 &mdash; confidence erodes even faster than
             correctness does.
           </p>
           <AccuracyEceChart />

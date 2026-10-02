@@ -6,6 +6,7 @@ const SECTIONS = [
   { id: "calibration", label: "Calibration" },
   { id: "selective", label: "Selective" },
   { id: "latency", label: "Latency" },
+  { id: "failures", label: "Sample failures" },
   { id: "takeaways", label: "Takeaways" },
 ];
 

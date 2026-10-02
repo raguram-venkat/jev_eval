@@ -38,10 +38,14 @@ export default function FailuresSection() {
         </div>
         <p className="sec-note">
           Five real misclassifications, sorted worst to borderline by how much probability the
-          correct answer got. Every card shows the same two numbers on the same 0&ndash;100 scale:
-          what the correct answer got, and what Jev's actual pick got. The dashed line is the
-          confidence cutoff E4&apos;s gate would use to auto-answer vs. escalate to a human, at a
-          90% accuracy target. <strong>Confident miss</strong> = correct answer under 5%.{" "}
+          correct answer got. The two bars are both read off Jev's own probability distribution
+          for that question, on the same 0&ndash;100 scale: what the correct answer got, and what
+          Jev's actual pick got. Where a card also lists a <strong>confidence</strong> number,
+          that's a different thing &mdash; Jev's own separately self-reported certainty in its
+          answer, not the probability above it. The dashed line is the cutoff E4&apos;s gate
+          applies to that confidence number to auto-answer vs. escalate to a human, at a 90%
+          accuracy target (BoolQ has no self-reported confidence, so its gate falls back to its
+          yes/no probability). <strong>Confident miss</strong> = correct answer under 5%.{" "}
           <strong>Coin flip</strong> = the two bars are within 10 points. <strong>Moderate miss</strong> =
           everything else.
         </p>
@@ -79,6 +83,10 @@ export default function FailuresSection() {
                       </span>
                     ))}
                   </div>
+                )}
+
+                {f.conf != null && (
+                  <div className="top3">Self-reported confidence: {pctLabel(f.conf)}</div>
                 )}
 
                 <div className="fail-foot">

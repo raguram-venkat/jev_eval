@@ -107,7 +107,7 @@ def plot_reliability_choice(path: Path, predictions: list[dict]) -> None:
     fig, axes = plt.subplots(1, max(len(ks), 1), figsize=(4 * max(len(ks), 1), 4), squeeze=False)
     for ax, k in zip(axes[0], ks):
         pairs = by_k[k]
-        confidence = [max(p["probabilities"].values()) for p, _ in pairs]
+        confidence = [p["confidence"] for p, _ in pairs]
         correct = [p["answer"] == row["label"] for p, row in pairs]
         xs, ys, ns = _reliability_bins(confidence, correct)
         ax.plot([0, 1], [0, 1], "--", color="grey")
@@ -213,7 +213,7 @@ def plot_selective(path: Path, predictions: list[dict]) -> None:
         pairs = by_k.get(k, [])
         if not pairs:
             continue
-        confidence = [max(p["probabilities"].values()) for p, _ in pairs]
+        confidence = [p["confidence"] for p, _ in pairs]
         correct = [p["answer"] == row["label"] for p, row in pairs]
         coverage, accuracy = _selective_curve(confidence, correct)
         ax.plot(coverage, accuracy, label=f"E1 k={k} (n={len(pairs)})")

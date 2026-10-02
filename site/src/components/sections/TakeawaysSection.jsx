@@ -3,7 +3,7 @@ import Reveal from "../Reveal";
 const TAKEAWAYS = [
   {
     title: "Confidence erodes faster than correctness.",
-    body: "Accuracy drops 20 points from k=2 to k=77; calibration error climbs 16× over the same span. The failure mode isn't just “wrong more often” — it's “wrong while sounding just as sure.” Don't trust a raw confidence score at face value on a hard task without checking it's still calibrated there.",
+    body: "Accuracy drops 20 points from k=2 to k=77; calibration error on Jev's own self-reported confidence climbs 17× over the same span. The failure mode isn't just “wrong more often” — it's “wrong while sounding just as sure.” Don't trust a raw confidence score at face value on a hard task without checking it's still calibrated there.",
   },
   {
     title: "Simpler decision shapes are well-calibrated out of the box.",

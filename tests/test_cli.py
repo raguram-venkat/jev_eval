@@ -70,6 +70,7 @@ def test_run_e1_end_to_end_against_fake_server(monkeypatch, fake_server, tmp_pat
                 "type": "choice",
                 "choice": options[0],
                 "probabilities": {opt: 1.0 if i == 0 else 0.0 for i, opt in enumerate(options)},
+                "confidence": 1.0,
             }},
         }, {})
 

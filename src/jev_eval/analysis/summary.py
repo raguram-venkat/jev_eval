@@ -73,7 +73,7 @@ def summarize_e1(predictions: list[dict]) -> list[dict]:
         y_true = [frozen[p["id"]]["label"] for p in group]
         y_pred = [p["answer"] for p in group]
         probs = [p["probabilities"] for p in group]
-        max_probs = [max(p.values()) for p in probs]
+        confidence = [p["confidence"] for p in group]
         correct = [t == pr for t, pr in zip(y_true, y_pred)]
 
         row = _blank_row("e1", f"k={k}", len(group))
@@ -89,7 +89,7 @@ def summarize_e1(predictions: list[dict]) -> list[dict]:
         row["brier_lo"], row["brier_hi"] = metrics.bootstrap_ci(
             len(group), lambda idx: metrics.choice_brier([y_true[i] for i in idx], [probs[i] for i in idx])
         )
-        row["ece"] = metrics.choice_ece(max_probs, correct)
+        row["ece"] = metrics.choice_ece(confidence, correct)
         row["p_true_below_001_rate"] = metrics.choice_p_true_below(probs, y_true)
         row["baseline_accuracy"] = baselines.chance_accuracy(k)
         rows.append(row)
@@ -162,7 +162,7 @@ def summarize_e4(predictions: list[dict]) -> list[dict]:
         ]
         if not group:
             continue
-        confidence = [max(p["probabilities"].values()) for p in group]
+        confidence = [p["confidence"] for p in group]
         correct = [p["answer"] == frozen_b77[p["id"]]["label"] for p in group]
         row = _blank_row("e4", f"e1_k={k}", len(group))
         row["coverage_at_90"] = metrics.coverage_at_accuracy(confidence, correct, 0.90)

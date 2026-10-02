@@ -1,8 +1,18 @@
 """Metrics for each primitive, plus a generic bootstrap CI helper.
 
-Every accuracy-type metric here is computed from probabilities/scores, never from the
-`confidence` field — the docs define confidence as distribution concentration, not
-correctness, so it must not leak into a metric that's supposed to measure correctness.
+Every *correctness* metric (accuracy, macro-F1, Brier, MAE, exact-accuracy, Spearman)
+is computed from probabilities/scores, never from the `confidence` field — confidence is
+the model's own self-assessment, not its answer, so it must not leak into a metric that's
+supposed to measure whether the answer is right.
+
+Calibration and selective-prediction metrics (`choice_ece`, `coverage_at_accuracy`) are
+the opposite case: their entire job is to grade whether a confidence signal can be
+trusted, so they take whatever signal is actually meant to answer that question. For
+Choice and Score, the wire format reports a separate `confidence` field alongside
+`probabilities` (see DECISIONS.md) — the model's own stated certainty, not guaranteed to
+equal the top probability — and that's the signal passed in. Noul has no separate
+`confidence` field at all; `p_yes`/`max(probabilities)` is the only signal that ever
+existed for it, so it's used as-is, not as a stand-in for something better.
 """
 from __future__ import annotations
 
@@ -50,18 +60,18 @@ def choice_brier(y_true: list[str], probs: list[dict[str, float]]) -> float:
     return total / len(y_true)
 
 
-def choice_ece(max_probs: list[float], correct: list[bool], n_bins: int = 15) -> float:
-    """Equal-width bins on the max probability."""
-    max_probs = np.asarray(max_probs)
+def choice_ece(confidence: list[float], correct: list[bool], n_bins: int = 15) -> float:
+    """Equal-width bins on whatever confidence signal is passed in."""
+    confidence = np.asarray(confidence)
     correct = np.asarray(correct, dtype=float)
     edges = np.linspace(0.0, 1.0, n_bins + 1)
-    n = len(max_probs)
+    n = len(confidence)
     ece = 0.0
     for lo, hi in zip(edges[:-1], edges[1:]):
-        in_bin = (max_probs > lo) & (max_probs <= hi) if lo > 0 else (max_probs >= lo) & (max_probs <= hi)
+        in_bin = (confidence > lo) & (confidence <= hi) if lo > 0 else (confidence >= lo) & (confidence <= hi)
         if not in_bin.any():
             continue
-        bin_conf = max_probs[in_bin].mean()
+        bin_conf = confidence[in_bin].mean()
         bin_acc = correct[in_bin].mean()
         ece += (in_bin.sum() / n) * abs(bin_conf - bin_acc)
     return float(ece)
